@@ -3,6 +3,7 @@ import random
 import numpy as np
 import torch
 from torch import cosine_similarity
+from torch_geometric.utils import k_hop_subgraph
 
 
 # 节点特征扰动
@@ -15,6 +16,7 @@ def perturb_node_features(x, noise_level=0.01):
     """
     x = x + noise_level * torch.randn_like(x)
     return x
+
 
 # 节点特征掩码
 def mask_node_features(x, mask_rate=0.1):
@@ -29,6 +31,7 @@ def mask_node_features(x, mask_rate=0.1):
     mask = torch.FloatTensor(mask).to(x.device)
     x = x * (1 - mask)
     return x
+
 
 # 边添加
 def add_edges(edge_index, num_nodes, add_rate=0.01):
@@ -47,6 +50,7 @@ def add_edges(edge_index, num_nodes, add_rate=0.01):
     added_edges = torch.tensor(added_edges, dtype=torch.long).t()
     edge_index = torch.cat([edge_index, added_edges], dim=1)
     return edge_index
+
 
 # 边删除
 def remove_edges(edge_index, remove_rate=0.01):
@@ -86,9 +90,6 @@ def adjust_edge_weights_by_similarity(x, edge_index, edge_attr):
     return edge_attr
 
 
-from torch_geometric.utils import k_hop_subgraph
-
-
 def extract_subgraph(data, node_idx, num_hops):
     """
     从给定的图数据中抽取以node_idx为中心的num_hops跳的子图。
@@ -114,5 +115,3 @@ def extract_subgraph(data, node_idx, num_hops):
         sub_data.edge_attr = data.edge_attr[edge_mask]
     # 如：sub_data.y = data.y[sub_nodes]
     return sub_data
-
-

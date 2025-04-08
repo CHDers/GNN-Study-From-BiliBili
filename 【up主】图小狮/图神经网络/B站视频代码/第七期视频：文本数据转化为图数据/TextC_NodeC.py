@@ -1,11 +1,9 @@
-
-
-'''
+"""
 案例数据集使用的是 ChnSentiCorp_htl_all数据集
 7000 多条酒店评论数据，5000 多条正向评论，2000 多条负向评论
 地址：https://raw.githubusercontent.com/SophonPlus/ChineseNlpCorpus/master/datasets/ChnSentiCorp_htl_all/ChnSentiCorp_htl_all.csv
  TextC_NodeC.py ----------- 将文本分类任务转化为节点分类任务：将每个评论作为一个节点。
-'''
+"""
 
 import numpy as np
 import pandas as pd
@@ -18,23 +16,28 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.nn as nn
 from tqdm import tqdm
+from rich import print
 
 # 读取数据文件
-df = pd.read_csv('data.csv')[:10]
+df = pd.read_csv('./data.csv').sample(frac=0.3).reset_index(drop=True)
 df.dropna(inplace=True)
 # 打乱数据顺序
 df = df.sample(frac=1).reset_index(drop=True)
+
 
 # 去除评论内容中的标点符号
 def remove_punctuation(text):
     punctuation = '，。！？；：“”‘’（）【】《》【】'
     return ''.join([c for c in text if c not in punctuation])
 
+
 df['review_cleaned'] = df['review'].apply(remove_punctuation)
+
 
 # 分词
 def tokenize(text):
     return jieba.lcut(text)
+
 
 df['tokens'] = df['review_cleaned'].apply(tokenize)
 
@@ -52,7 +55,9 @@ total_iterations = len(df['tokens']) * len(df['tokens'][0])  # 计算总的迭�
 with tqdm(total=total_iterations, desc='Processing edges') as pbar:  # 创建进度条对象
     for idx, tokens in enumerate(df['tokens']):
         for token in tokens:
-            edges.extend([(node_to_idx[idx], node_to_idx[other_idx]) for other_idx, other_tokens in enumerate(df['tokens']) if token in other_tokens and idx != other_idx])
+            edges.extend(
+                [(node_to_idx[idx], node_to_idx[other_idx]) for other_idx, other_tokens in enumerate(df['tokens']) if
+                 token in other_tokens and idx != other_idx])
             pbar.update(1)
 
 # 去除重复的边
@@ -81,6 +86,7 @@ data.train_mask = train_mask
 data.val_mask = val_mask
 data.test_mask = test_mask
 
+
 # 创建 GCN 模型
 class GCN(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels):
@@ -103,7 +109,7 @@ criterion = nn.NLLLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 
 # 模型训练和评估
-num_epochs = 10
+num_epochs = 100
 for epoch in range(num_epochs):
     model.train()
     optimizer.zero_grad()
@@ -123,6 +129,3 @@ for epoch in range(num_epochs):
     test_correct = test_pred[data.test_mask].eq(data.y[data.test_mask]).sum().item()
     test_acc = test_correct / data.test_mask.sum().item()
     print(f'Epoch: [{epoch:03d}/{num_epochs}], Loss: {loss:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
-
-
-

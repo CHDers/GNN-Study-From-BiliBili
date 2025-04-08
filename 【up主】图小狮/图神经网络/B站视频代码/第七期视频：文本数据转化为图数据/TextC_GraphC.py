@@ -1,12 +1,9 @@
-
-
-'''
+"""
 案例数据集使用的是 ChnSentiCorp_htl_all数据集
 7000 多条酒店评论数据，5000 多条正向评论，2000 多条负向评论
 地址：https://raw.githubusercontent.com/SophonPlus/ChineseNlpCorpus/master/datasets/ChnSentiCorp_htl_all/ChnSentiCorp_htl_all.csv
  TextC_GraphC.py ----------- 将文本分类任务转化为图分类任务：每条评论中出现的词作为一个节点。
-'''
-
+"""
 
 import pandas as pd
 import torch
@@ -17,8 +14,17 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from torch_geometric.nn import global_mean_pool
 from sklearn.model_selection import train_test_split
+from rich import print
+from pathlib import Path
+import sys
+
+ROOT_DIR = Path(__file__).parent.parent
+print(ROOT_DIR)
+if ROOT_DIR not in sys.path:
+    sys.path.append(str(ROOT_DIR))
+
 # 读取数据
-data = pd.read_csv('data.csv')[:100]
+data = pd.read_csv('./data.csv').sample(frac=0.3).reset_index(drop=True)
 # 处理空值
 data['review'].fillna('', inplace=True)
 # 分词
@@ -52,6 +58,7 @@ train_data, val_data = train_test_split(train_data, test_size=0.2, random_state=
 train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_data, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
+
 
 # 定义图神经网络模型
 class GNN(torch.nn.Module):

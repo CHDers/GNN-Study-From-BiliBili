@@ -103,7 +103,7 @@ def train(model, data):
     return loss.item()
 
 
-def test(model, data):
+def val(model, data):
     model.eval()
     logits, accs = model(data.x, data.edge_index), []
     for _, mask in data('train_mask', 'val_mask', 'test_mask'):
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     Best_Acc = []
     for epoch in range(1, args.epochs):
         loss = train(model, data)
-        accs, log = test(model, data)
+        accs, log = val(model, data)
         train_acc, val_acc, test_acc = accs
         print(
             f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
