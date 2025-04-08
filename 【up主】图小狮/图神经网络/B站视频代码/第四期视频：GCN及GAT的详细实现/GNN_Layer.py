@@ -51,6 +51,7 @@ class GCNConv(nn.Module):
         output = torch.matmul(norm_adj, support) + self.bias  # D^{-1/2} * A * D^{-1/2} * (X * W) + b
         return output  # 返回输出，可以选择使用ReLU等激活函数进行非线性变换
 
+
 class GATConv(nn.Module):
     def __init__(self, in_features, out_features, dropout=0.2, alpha=0.2, concat=True):
         super(GATConv, self).__init__()
@@ -68,7 +69,7 @@ class GATConv(nn.Module):
         self.W = nn.Parameter(torch.empty(size=(in_features, out_features)))
         nn.init.xavier_uniform_(self.W.data, gain=1.414)
         # 定义注意力机制中可学习的参数a
-        self.a = nn.Parameter(torch.empty(size=(2*out_features, 1)))
+        self.a = nn.Parameter(torch.empty(size=(2 * out_features, 1)))
         nn.init.xavier_uniform_(self.a.data, gain=1.414)
 
         # 定义LeakyReLU激活函数
@@ -78,11 +79,11 @@ class GATConv(nn.Module):
         # 将边索引转换为稠密邻接矩阵，并去除多余的维度
         adj = to_dense_adj(edge_index).squeeze(0)
         # 应用线性变换
-        Wh = torch.mm(h, self.W) # h.shape: (N, in_features), Wh.shape: (N, out_features)
+        Wh = torch.mm(h, self.W)  # h.shape: (N, in_features), Wh.shape: (N, out_features)
         # 准备注意力机制的输入
         e = self._prepare_attentional_mechanism_input(Wh)
         # 创建一个足够小的向量用于掩盖不存在的边
-        zero_vec = -9e15*torch.ones_like(e)
+        zero_vec = -9e15 * torch.ones_like(e)
         # 只有当adj中存在边时，才保留e中的值，否则用zero_vec中的极小值代替
         attention = torch.where(adj > 0, e, zero_vec)
         # 对注意力系数进行softmax操作，使得每个节点的注意力系数和为1

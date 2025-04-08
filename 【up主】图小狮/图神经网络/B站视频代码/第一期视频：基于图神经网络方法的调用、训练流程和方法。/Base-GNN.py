@@ -9,6 +9,7 @@ from torch_geometric.datasets import Planetoid
 import torch_geometric.transforms as T
 from torch_geometric.nn import GCNConv, GATConv, SAGEConv, ChebConv, TransformerConv
 import torch.optim as optim
+from rich import print
 
 
 def setup_seed(seed):
@@ -17,7 +18,8 @@ def setup_seed(seed):
     torch.backends.cudnn.deterministic = True
     np.random.seed(seed)
     random.seed(seed)
-setup_seed(42)
+
+
 # 命令行参数
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Base-Graph Neural Network')
@@ -30,9 +32,11 @@ def parse_arguments():
     parser.add_argument('--lr', default=0.01, help="Learning Rate selection")
     parser.add_argument('--wd', default=5e-4, help="weight_decay selection")
     parser.add_argument('--epochs', default=200, help="train epochs selection")
-    parser.add_argument('--tsne_drawing', choices=[True, False], default=False,
+    parser.add_argument('--tsne_drawing', choices=[True, False], default=True,
                         help="Whether to use tsne drawing")
-    parser.add_argument('--tsne_colors', default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'], help="colors")
+    parser.add_argument('--tsne_colors',
+                        default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'],
+                        help="colors")
     return parser.parse_args()
 
 
@@ -40,6 +44,7 @@ def parse_arguments():
 def load_dataset(name):
     dataset = Planetoid(root='dataset/' + name, name=name, transform=T.NormalizeFeatures())
     return dataset
+
 
 # 使用Tsne绘图
 def plot_points(z, y):
@@ -52,6 +57,7 @@ def plot_points(z, y):
     plt.axis('off')
     plt.savefig('{} embeddings ues tnse to plt figure.png'.format(args.model))
     plt.show()
+
 
 # 定义模型
 class GNN(torch.nn.Module):
@@ -83,6 +89,7 @@ class GNN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return x
 
+
 def train(model, data):
     model.train()
     optimizer.zero_grad()
@@ -92,8 +99,9 @@ def train(model, data):
     optimizer.step()
     return loss.item()
 
+
 # 新增测试函数
-def test(model, data):
+def val(model, data):
     model.eval()
     logits, accs = model(data.x, data.edge_index), []
     for _, mask in data('train_mask', 'val_mask', 'test_mask'):
@@ -102,7 +110,9 @@ def test(model, data):
         accs.append(acc)
     return accs, logits
 
+
 if __name__ == "__main__":
+    setup_seed(42)
     args = parse_arguments()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset = load_dataset(args.dataset)
@@ -116,11 +126,11 @@ if __name__ == "__main__":
     Best_Acc = []
     for epoch in range(1, args.epochs):
         loss = train(model, data)
-        accs, log= test(model, data)
+        accs, log = val(model, data)
         train_acc, val_acc, test_acc = accs
         print(f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
         Best_Acc.append(test_acc)
-    if args.tsne_drawing == True:
+    if args.tsne_drawing:
         plot_points(log, data.y)
     print('---------------------------')
     print('Best Acc: {:.4f}'.format(test_acc))
