@@ -69,12 +69,15 @@ class GNN(torch.nn.Module):
         self.dropout_rate = dropout_rate
         self.conv1 = GCNConv(in_channels, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, out_channels)
-        # self.kans1 = KANLinear(in_channels, hidden_channels)
-        # self.kans2 = KANLinear(hidden_channels, out_channels)
-        # self.lin1 = torch.nn.Linear(in_channels, hidden_channels)
-        # self.lin2 = torch.nn.Linear(hidden_channels, out_channels)
-        # self.fastkans1 = FastKANLayer(in_channels, hidden_channels)
-        # self.fastkans2 = FastKANLayer(hidden_channels, out_channels)
+
+        self.kans1 = KANLinear(in_channels, hidden_channels)
+        self.kans2 = KANLinear(hidden_channels, out_channels)
+
+        self.lin1 = torch.nn.Linear(in_channels, hidden_channels)
+        self.lin2 = torch.nn.Linear(hidden_channels, out_channels)
+
+        self.fastkans1 = FastKANLayer(in_channels, hidden_channels)
+        self.fastkans2 = FastKANLayer(hidden_channels, out_channels)
 
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index)
