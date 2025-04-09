@@ -13,13 +13,18 @@ import torch.nn.functional as F
 from torch_geometric.utils import to_dense_adj
 
 from xKANeRF.xKAN import get_kan_model
+
+
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     np.random.seed(seed)
     random.seed(seed)
+
+
 setup_seed(42)
+
 
 # 命令行参数
 def parse_arguments():
@@ -39,13 +44,17 @@ def parse_arguments():
     parser.add_argument('--epochs', default=200, help="train epochs selection")
     parser.add_argument('--tsne_drawing', choices=[True, False], default=False,
                         help="Whether to use tsne drawing")
-    parser.add_argument('--tsne_colors', default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'], help="colors")
+    parser.add_argument('--tsne_colors',
+                        default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'],
+                        help="colors")
     return parser.parse_args()
+
 
 # 加载数据集
 def load_dataset(name):
     dataset = Planetoid(root='dataset/' + name, name=name, transform=T.NormalizeFeatures())
     return dataset
+
 
 # 使用Tsne绘图
 def plot_points(z, y):
@@ -58,6 +67,7 @@ def plot_points(z, y):
     plt.axis('off')
     plt.savefig('{} embeddings ues tnse to plt figure.png'.format(args.model))
     plt.show()
+
 
 # 定义模型
 class GraphxKans(torch.nn.Module):
@@ -98,6 +108,7 @@ def test(model, data):
         accs.append(acc)
     return accs, logits
 
+
 if __name__ == "__main__":
     args = parse_arguments()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -105,7 +116,7 @@ if __name__ == "__main__":
     data = dataset[0].to(device)
     print(data)
     model = GraphxKans(in_channels=dataset.num_node_features, hidden_channels=args.hidden_dim,
-                out_channels=dataset.num_classes, args=args).to(device)
+                       out_channels=dataset.num_classes, args=args).to(device)
     print(model)
     print(f"Loaded {args.dataset} dataset with {data.num_nodes} nodes and {data.num_edges} edges.")
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
@@ -113,9 +124,10 @@ if __name__ == "__main__":
     Best_Acc = []
     for epoch in range(1, args.epochs):
         loss = train(model, data)
-        accs, log= test(model, data)
+        accs, log = test(model, data)
         train_acc, val_acc, test_acc = accs
-        print(f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
+        print(
+            f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
         Best_Acc.append(test_acc)
     if args.tsne_drawing == True:
         plot_points(log, data.y)

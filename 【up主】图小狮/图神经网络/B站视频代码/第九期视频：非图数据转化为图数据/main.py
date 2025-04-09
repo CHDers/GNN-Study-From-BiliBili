@@ -12,13 +12,19 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from utils import nearest_neighbors_sparse, nearest_neighbors_dense, cosine_similarity_adj
 from torch_geometric.utils import dense_to_sparse, to_dense_adj
+
+
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     np.random.seed(seed)
     random.seed(seed)
+
+
 setup_seed(42)
+
+
 # 命令行参数
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Base-Graph Neural Network')
@@ -31,7 +37,9 @@ def parse_arguments():
     parser.add_argument('--epochs', default=200, help="train epochs selection")
     parser.add_argument('--tsne_drawing', choices=[True, False], default=False,
                         help="Whether to use tsne drawing")
-    parser.add_argument('--tsne_colors', default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'], help="colors")
+    parser.add_argument('--tsne_colors',
+                        default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'],
+                        help="colors")
     return parser.parse_args()
 
 
@@ -39,6 +47,7 @@ def parse_arguments():
 def load_dataset(name):
     dataset = Planetoid(root='dataset/' + name, name=name, transform=T.NormalizeFeatures())
     return dataset
+
 
 # 使用Tsne绘图
 def plot_points(z, y):
@@ -52,6 +61,7 @@ def plot_points(z, y):
     plt.savefig('{} embeddings ues tnse to plt figure.png'.format(args.model))
     plt.show()
 
+
 # 定义模型
 class GNN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate):
@@ -60,12 +70,12 @@ class GNN(torch.nn.Module):
         self.conv1 = GCNConv(in_channels, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, out_channels)
 
-
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index).relu()
         x = F.dropout(x, p=self.dropout_rate, training=self.training)
         x = self.conv2(x, edge_index)
         return x
+
 
 def train(model, data):
     model.train()
@@ -77,7 +87,7 @@ def train(model, data):
     return loss.item()
 
 
-def test(model, data):
+def val(model, data):
     model.eval()
     logits, accs = model(data.x, data.edge_index), []
     for _, mask in data('train_mask', 'val_mask', 'test_mask'):
@@ -86,14 +96,15 @@ def test(model, data):
         accs.append(acc)
     return accs, logits
 
+
 if __name__ == "__main__":
     args = parse_arguments()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dataset = load_dataset(args.dataset)
     data = dataset[0]
-    # knn_adj = nearest_neighbors_sparse(data.x.numpy(), k=7, metric='minkowski')
-    cons_adj = cosine_similarity_adj(data.x.numpy(), 0.5)
-    data.edge_index = cons_adj
+    knn_adj = nearest_neighbors_dense(data.x.numpy(), k=7, metric='minkowski')
+    # cons_adj = cosine_similarity_adj(data.x.numpy(), 0.5)
+    data.edge_index = knn_adj
     data = data.to(device)
     model = GNN(in_channels=data.x.shape[1], hidden_channels=args.hidden_dim,
                 out_channels=dataset.num_classes, dropout_rate=args.dropout_rate).to(device)
@@ -103,9 +114,10 @@ if __name__ == "__main__":
     Best_Acc = []
     for epoch in range(1, args.epochs):
         loss = train(model, data)
-        accs, log= test(model, data)
+        accs, log = val(model, data)
         train_acc, val_acc, test_acc = accs
-        print(f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
+        print(
+            f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
         Best_Acc.append(test_acc)
     if args.tsne_drawing == True:
         plot_points(log, data.y)

@@ -12,13 +12,18 @@ from GNN_Layer import GCNConv
 from KAN import KANLinear
 from FastKAN import FastKANLayer
 import torch.nn.functional as F
+
+
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     np.random.seed(seed)
     random.seed(seed)
+
+
 setup_seed(42)
+
 
 # 命令行参数
 def parse_arguments():
@@ -32,8 +37,11 @@ def parse_arguments():
     parser.add_argument('--epochs', default=200, help="train epochs selection")
     parser.add_argument('--tsne_drawing', choices=[True, False], default=False,
                         help="Whether to use tsne drawing")
-    parser.add_argument('--tsne_colors', default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'], help="colors")
+    parser.add_argument('--tsne_colors',
+                        default=['#ffc0cb', '#bada55', '#008080', '#420420', '#7fe5f0', '#065535', '#ffd700'],
+                        help="colors")
     return parser.parse_args()
+
 
 # 加载数据集
 def load_dataset(name):
@@ -53,6 +61,7 @@ def plot_points(z, y):
     plt.savefig('{} embeddings ues tnse to plt figure.png'.format(args.model))
     plt.show()
 
+
 # 定义模型
 class GNN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate):
@@ -67,15 +76,12 @@ class GNN(torch.nn.Module):
         # self.fastkans1 = FastKANLayer(in_channels, hidden_channels)
         # self.fastkans2 = FastKANLayer(hidden_channels, out_channels)
 
-
-
-
-
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index)
         x = torch.nn.functional.dropout(x, p=self.dropout_rate, training=self.training)
         x = self.conv2(x, edge_index)
         return x
+
 
 def train(model, data):
     model.train()
@@ -96,6 +102,7 @@ def test(model, data):
         accs.append(acc)
     return accs, logits
 
+
 if __name__ == "__main__":
     args = parse_arguments()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -111,9 +118,10 @@ if __name__ == "__main__":
     Best_Acc = []
     for epoch in range(1, args.epochs):
         loss = train(model, data)
-        accs, log= test(model, data)
+        accs, log = test(model, data)
         train_acc, val_acc, test_acc = accs
-        print(f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
+        print(
+            f'Epoch: [{epoch:03d}/200], Loss: {loss:.4f}, Train: {train_acc:.4f}, Val: {val_acc:.4f}, Test: {test_acc:.4f}')
         Best_Acc.append(test_acc)
     if args.tsne_drawing == True:
         plot_points(log, data.y)

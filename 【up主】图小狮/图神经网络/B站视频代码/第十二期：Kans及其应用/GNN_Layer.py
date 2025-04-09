@@ -7,6 +7,7 @@ from torch_geometric.utils import to_dense_adj
 from KAN import KANLinear
 from FastKAN import FastKANLayer
 
+
 class GCNConv(nn.Module):
     def __init__(self, in_features, out_features):
         super(GCNConv, self).__init__()
@@ -16,7 +17,6 @@ class GCNConv(nn.Module):
 
         # self.mlp = nn.Linear(in_features, out_features)
         self.FastKAN = FastKANLayer(in_features, out_features)
-
 
     def forward(self, x, edge_index):
         num_nodes = x.size(0)

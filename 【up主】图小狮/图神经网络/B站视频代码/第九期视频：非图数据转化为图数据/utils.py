@@ -2,6 +2,8 @@ from sklearn.neighbors import kneighbors_graph
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+
+
 def nearest_neighbors_sparse(X, k, metric):
     adj = kneighbors_graph(X, k, metric=metric)
     adj = np.array(adj.todense(), dtype=np.float32)
@@ -10,11 +12,13 @@ def nearest_neighbors_sparse(X, k, metric):
     edge_index = torch.tensor(edge_index, dtype=torch.long)
     return edge_index
 
+
 def nearest_neighbors_dense(X, k, metric):
     adj = kneighbors_graph(X, k, metric=metric)
     adj = np.array(adj.todense(), dtype=np.float32)
     adj += np.eye(adj.shape[0])
     return torch.tensor(adj)
+
 
 def cosine_similarity_adj(X, threshold):
     similarity_matrix = cosine_similarity(X)
